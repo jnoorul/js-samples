@@ -11,23 +11,29 @@ import * as square from './ES6MyModule';
 //you can selectively import individual exported members.
 //you should know their exact name like area, circumference.
 //you can put alias if needed.. import {area} as areaOfSquare
-import {area,circumference} from './ES6MyModule';
+import {circumference, setSides} from './ES6MyModule.js';
+import { circumference as anotherConsumerCircumference} from './another-consumer.js';
+
 
 
 (function(){
-    console.log(circumference(5));
-    console.log(area(5));
+    console.log('inside first consumer module');
+    setSides(6);
+    console.log('Circumference : ',circumference(5));
+    console.log('call circumference through another consumer');
+    console.log(anotherConsumerCircumference(5));
 })();
+
 
 
 //you can put alias if needed.. import {area} as areaOfSquare
-import {area as myArea}  from './ES6MyModule';
+// import {circumference as myCircum}  from './ES6MyModule';
 
 
-(function(){
-    // console.log(myCircum(5));
-    console.log(myArea(5));
-})();
+// (function(){
+//    console.log(myCircum(5));
+
+// })();
 
 // you can specify any names like "mySquare" when default export is used in exported module.
 //
@@ -36,6 +42,5 @@ import {area as myArea}  from './ES6MyModule';
 
 (function(){
     console.log(mySquare.circumference(5));
-    console.log(mySquare.area(5));
 })();*/
 
