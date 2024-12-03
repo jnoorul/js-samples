@@ -1007,15 +1007,12 @@ const input = `
 
 function calculateTotalDistance() {
 
-    // Split the input into lines and process each line
     const lines = input.trim().split('\n');
     console.log('lines', lines);
 
-    // Initialize two arrays for the columns
     const leftList = [];
     const rightList = [];
 
-    // Loop through each line to extract numbers
     lines.forEach(line => {
         const [num1, num2] = line.split('   ').map(Number);
         leftList.push(num1);
@@ -1025,13 +1022,11 @@ function calculateTotalDistance() {
     console.log('left list', leftList);
     console.log('right list', rightList);
 
-    // Sort both lists in ascending order
     leftList.sort((a, b) => a - b);
     rightList.sort((a, b) => a - b);
 
     let totalDistance = 0;
 
-    // Calculate the distance for each pair and sum it up
     for (let i = 0; i < leftList.length; i++) {
         totalDistance += Math.abs(leftList[i] - rightList[i]);
     }
@@ -1039,6 +1034,5 @@ function calculateTotalDistance() {
     return totalDistance;
 }
 
-// Calculate the total distance
 const result = calculateTotalDistance();
 console.log('Total Distance:', result);
