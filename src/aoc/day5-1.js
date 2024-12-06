@@ -1416,7 +1416,7 @@ const updates = `49,85,73,74,96,32,76,58,95,57,13,93,14,99,56,47,75
 
 const rulesArray = rules.split("\n");
 const updatesArray = updates.split("\n");
-console.log(rulesArray);
-console.log(updatesArray);
+console.log(rulesArray.length);
+console.log(updatesArray.length);
 const result = findMiddlePageSum(rulesArray, updatesArray);
 console.log(result);
