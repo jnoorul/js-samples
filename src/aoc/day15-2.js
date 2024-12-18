@@ -1,138 +1,117 @@
-// Parses the input grid into a widened 2D array.
-function parseGrid(input) {
-  return input.split("\n").map((line) =>
-    line
-      .split("")
-      .map((char) => {
-        if (char === "#") return "##";
-        if (char === ".") return "..";
-        if (char === "O") return "[]";
-        if (char === "@") return "@.";
-        return char;
-      })
-      .join("")
-  );
-}
-
-// Finds the position of the robot (@) and all boxes ([]) in the grid.
-function findPositions(grid) {
-  let robot = null;
-  let boxes = [];
-
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x += 2) {
-      const cell = grid[y].slice(x, x + 2);
-      if (cell === "@.") robot = { x, y };
-      if (cell === "[]") boxes.push({ x, y });
-    }
-  }
-
-  return { robot, boxes };
-}
-
-// Updates the grid and returns the new state after attempting a move.
-function attemptMove(grid, robot, direction) {
+// Function to execute the movement logic
+function moveRobot(map, instructions) {
   const directions = {
-    "^": { dx: 0, dy: -1 },
-    v: { dx: 0, dy: 1 },
-    "<": { dx: -2, dy: 0 },
-    ">": { dx: 2, dy: 0 },
+    "<": [0, -1],
+    ">": [0, 1],
+    "^": [-1, 0],
+    v: [1, 0],
   };
 
-  const { dx, dy } = directions[direction];
-  const nextX = robot.x + dx;
-  const nextY = robot.y + dy;
-
-  // If the next position is a wall (##), the robot can't move.
-  if (grid[nextY]?.slice(nextX, nextX + 2) === "##") return robot;
-
-  // If the next position is a box ([]), check if the box can be pushed.
-  if (grid[nextY]?.slice(nextX, nextX + 2) === "[]") {
-    let boxNextX = nextX + dx;
-    let boxNextY = nextY + dy;
-
-    // Traverse through consecutive boxes to find the last box in the row/column.
-    while (grid[boxNextY]?.slice(boxNextX, boxNextX + 2) === "[]") {
-      boxNextX += dx;
-      boxNextY += dy;
-    }
-
-    // If the last position is a wall, obstacle, or out of bounds, nothing moves.
-    if (
-      grid[boxNextY]?.slice(boxNextX, boxNextX + 2) === "##" ||
-      grid[boxNextY]?.slice(boxNextX, boxNextX + 2) === "[]" ||
-      grid[boxNextY] === undefined
-    ) {
-      return robot;
-    }
-
-    // Move all the boxes sequentially.
-    let currentBoxX = boxNextX - dx;
-    let currentBoxY = boxNextY - dy;
-    while (grid[currentBoxY]?.slice(currentBoxX, currentBoxX + 2) === "[]") {
-      grid[currentBoxY] =
-        grid[currentBoxY].slice(0, currentBoxX) +
-        ".." +
-        grid[currentBoxY].slice(currentBoxX + 2);
-      grid[currentBoxY + dy] =
-        grid[currentBoxY + dy].slice(0, currentBoxX + dx) +
-        "[]" +
-        grid[currentBoxY + dy].slice(currentBoxX + dx + 2);
-      currentBoxX -= dx;
-      currentBoxY -= dy;
-    }
-  }
-
-  // Move the robot.
-  grid[robot.y] =
-    grid[robot.y].slice(0, robot.x) + ".." + grid[robot.y].slice(robot.x + 2);
-  grid[nextY] =
-    grid[nextY].slice(0, nextX) + "@." + grid[nextY].slice(nextX + 2);
-
-  return { x: nextX, y: nextY };
-}
-
-// Calculates the total score for the final positions of the boxes.
-function calculateScore(grid) {
-  let score = 0;
-
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x += 2) {
-      if (grid[y].slice(x, x + 2) === "[]") {
-        score += 100 * y + x / 2;
+  // Find the robot's initial position
+  let robotX, robotY;
+  for (let i = 0; i < map.length; i++) {
+    for (let j = 0; j < map[i].length; j++) {
+      if (map[i][j] === "@") {
+        robotX = i;
+        robotY = j;
+        break;
       }
     }
   }
 
-  return score;
-}
+  for (let move of instructions) {
+    const [dx, dy] = directions[move];
+    const newX = robotX + dx;
+    const newY = robotY + dy;
+    const nextPos = map[newX]?.[newY];
+    const beyondPos1 = map[newX]?.[newY + 2]; // For checking position beyond horizontally aligned box
+    const beyondPos2 = map[newX]?.[newY - 2]; // For checking position left of horizontally aligned box
+    const beyondPosVert = map[newX + dx]?.[newY]; // For checking position beyond vertically aligned box
 
-// Main function to process the grid and moves.
-function processMoves(gridInput, movesInput) {
-  const grid = parseGrid(gridInput);
-  let { robot } = findPositions(grid);
-
-  // Remove newlines from moves and process each move sequentially.
-  const moves = movesInput.replace(/\n/g, "").split("");
-
-  for (const move of moves) {
-    robot = attemptMove(grid, robot, move);
+    if (nextPos === ".") {
+      // Move robot to free space
+      map[robotX][robotY] = ".";
+      map[newX][newY] = "@";
+      robotX = newX;
+      robotY = newY;
+    } else if (
+      nextPos === "[" &&
+      map[newX][newY + 1] === "]" &&
+      beyondPos1 === "." &&
+      move === ">"
+    ) {
+      // Move box (horizontally aligned) right and then robot
+      map[newX][newY] = "@";
+      map[newX][newY + 2] = "[";
+      map[newX][newY + 3] = "]";
+      map[newX][newY + 1] = "."; // Clear old box bracket positions
+      map[robotX][robotY] = ".";
+      robotX = newX;
+      robotY = newY;
+    } else if (
+      nextPos === "]" &&
+      map[newX][newY - 1] === "[" &&
+      beyondPos2 === "." &&
+      move === "<"
+    ) {
+      // Move box (horizontally aligned) left and then robot
+      map[newX][newY - 2] = "[";
+      map[newX][newY - 1] = "]";
+      map[newX][newY] = "@";
+      map[newX][newY + 1] = "."; // Clear old box bracket positions
+      map[robotX][robotY] = ".";
+      robotX = newX;
+      robotY = newY;
+    } else if (
+      nextPos === "[" &&
+      map[newX][newY + 1] === "]" &&
+      beyondPosVert === "." &&
+      move === "v"
+    ) {
+      // Move box (vertically aligned) down and then robot
+      map[newX + 1][newY] = "[";
+      map[newX + 1][newY + 1] = "]";
+      map[newX][newY] = "@";
+      map[robotX][robotY] = ".";
+      robotX = newX;
+      robotY = newY;
+    } else if (
+      nextPos === "]" &&
+      map[newX][newY - 1] === "[" &&
+      beyondPosVert === "." &&
+      move === "^"
+    ) {
+      // Move box (vertically aligned) up and then robot
+      map[newX - 1][newY] = "]";
+      map[newX - 1][newY - 1] = "[";
+      map[newX][newY] = "@";
+      map[robotX][robotY] = ".";
+      robotX = newX;
+      robotY = newY;
+    }
   }
 
-  return calculateScore(grid);
+  return map;
 }
 
-// Example usage:
-const gridInput = `########
-  #..O.O.#
-  ##@.O..#
-  #...O..#
-  #.#.O..#
-  #...O..#
-  #......#
-  ########`;
+// Helper function to pretty print the map
+function printMap(map) {
+  return map.map((row) => row.join("")).join("\n");
+}
 
-const movesInput = `<^^>>>vv<v>>v<<`;
+// Sample Input
+const map = [
+  "##############".split(""),
+  "##......##..##".split(""),
+  "##..........##".split(""),
+  "##....[][]@.##".split(""),
+  "##....[]....##".split(""),
+  "##..........##".split(""),
+  "##############".split(""),
+];
 
-const score = processMoves(gridInput, movesInput);
-console.log("Final Score:", score);
+const instructions = "<vv<<^^<<^^";
+
+// Execute the moves
+const result = moveRobot(map, instructions);
+console.log(printMap(result));
